@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CivilBot</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark">C</span> CivilBot</div>
+
+    <div class="section-label">Mode</div>
+    <div class="mode-list" id="modeList">
+      <button class="mode-btn active" data-mode="general">
+        <strong>General</strong><span>Ask me anything</span>
+      </button>
+      <button class="mode-btn" data-mode="student">
+        <strong>Learn</strong><span>Step-by-step for students</span>
+      </button>
+      <button class="mode-btn" data-mode="professional">
+        <strong>Professional</strong><span>Exact checks, grounded numbers</span>
+      </button>
+    </div>
+
+    <div class="section-label">Document</div>
+    <label class="upload-box" id="uploadBox">
+      <input type="file" id="pdfInput" accept="application/pdf" hidden />
+      <span id="uploadLabel">Upload a PDF (spec / calc sheet)</span>
+    </label>
+    <div id="uploadResult" class="upload-result"></div>
+
+    <div class="section-label">Simulator</div>
+    <div class="sim-buttons">
+      <button class="sim-btn" data-sim="beam">Beam</button>
+      <button class="sim-btn" data-sim="column">Column</button>
+      <button class="sim-btn" data-sim="truss">Truss</button>
+    </div>
+
+    <button class="new-chat" id="newChatBtn">+ New chat</button>
+    <div class="footer-note">Free pilot &middot; results from beam/column questions are computed by a deterministic engine, not guessed.</div>
+  </aside>
+
+  <main class="main">
+    <div class="chat-scroll" id="chatScroll">
+      <div class="msg bot">
+        <div class="bubble">
+          Hi, I'm CivilBot. Ask me anything — general questions, or civil/structural engineering
+          topics. Switch to <b>Learn</b> for step-by-step tutoring, or <b>Professional</b> when you
+          need exact, engine-checked numbers for a design. You can also upload a spec/calc-sheet PDF
+          or open the Simulator for a standalone calculator.
+        </div>
+      </div>
+    </div>
+    <div class="composer">
+      <textarea id="msgInput" placeholder="Message CivilBot..." rows="1"></textarea>
+      <button id="sendBtn">Send</button>
+    </div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="simBackdrop">
+  <div class="modal" id="simModal">
+    <div class="modal-head">
+      <span id="simTitle">Simulator</span>
+      <button id="simClose">&times;</button>
+    </div>
+    <div class="modal-body" id="simBody"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
