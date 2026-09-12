@@ -23,6 +23,38 @@ function escapeHtml(s) {
   return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
 
+// Small hand-rolled markdown renderer (headers, bold, italic, inline code,
+// unordered/ordered lists, horizontal rules) - avoids a CDN dependency for
+// a handful of formatting rules the model actually uses in replies.
+function renderMarkdown(raw) {
+  const lines = escapeHtml(raw).split("\n");
+  let html = "";
+  let inList = null; // 'ul' | 'ol' | null
+  const closeList = () => {
+    if (inList) { html += `</${inList}>`; inList = null; }
+  };
+  const inline = (s) =>
+    s
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+      .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<i>$2</i>");
+
+  for (const line of lines) {
+    if (/^\s*(---|\*\*\*)\s*$/.test(line)) { closeList(); html += "<hr>"; continue; }
+    const h = line.match(/^(#{1,4})\s+(.*)$/);
+    if (h) { closeList(); const lvl = Math.min(h[1].length + 2, 6); html += `<h${lvl}>${inline(h[2])}</h${lvl}>`; continue; }
+    const ul = line.match(/^\s*[-*]\s+(.*)$/);
+    if (ul) { if (inList !== "ul") { closeList(); html += "<ul>"; inList = "ul"; } html += `<li>${inline(ul[1])}</li>`; continue; }
+    const ol = line.match(/^\s*\d+[.)]\s+(.*)$/);
+    if (ol) { if (inList !== "ol") { closeList(); html += "<ol>"; inList = "ol"; } html += `<li>${inline(ol[1])}</li>`; continue; }
+    if (line.trim() === "") { closeList(); html += "<br>"; continue; }
+    closeList();
+    html += `<div>${inline(line)}</div>`;
+  }
+  closeList();
+  return html;
+}
+
 function fmtToolCalls(toolCalls) {
   if (!toolCalls || !toolCalls.length) return "";
   return toolCalls
@@ -60,7 +92,7 @@ async function sendMessage() {
       toolMsg.appendChild(b);
       chatScroll.insertBefore(toolMsg, thinking.parentElement);
     }
-    thinking.innerHTML = escapeHtml(data.reply).replace(/\n/g, "<br>");
+    thinking.innerHTML = renderMarkdown(data.reply);
     sessionId = data.session_id;
     localStorage.setItem("civilbot_session", sessionId);
   } catch (e) {

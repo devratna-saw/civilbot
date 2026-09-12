@@ -13,7 +13,7 @@ import google.generativeai as genai
 from . import structural_engine as eng
 
 _API_KEY = os.environ.get("GEMINI_API_KEY")
-_MODEL_NAME = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+_MODEL_NAME = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
 _configured = False
 
 
@@ -29,6 +29,13 @@ def _ensure_configured():
         _configured = True
 
 
+_FORMATTING_RULE = (
+    " Formatting: this chat UI renders a small subset of markdown (#/##/### headers, **bold**, "
+    "*italics*, `code`, -/1. lists, --- rules) and does NOT render LaTeX. Never use LaTeX or "
+    "$...$ math delimiters - write formulas and units in plain text instead, e.g. 'M = wL^2/8' "
+    "and 'sigma = M*c/I', with units like 'kN', 'm', 'MPa' spelled out plainly."
+)
+
 SYSTEM_PROMPTS = {
     "general": (
         "You are CivilBot, a friendly, capable general-purpose AI assistant - you can help with "
@@ -36,6 +43,7 @@ SYSTEM_PROMPTS = {
         "structural engineering and calls for a precise numeric result (bending moment, deflection, "
         "required member size, buckling capacity, etc.), you MUST call the matching calculation tool "
         "instead of estimating the number yourself, then explain the result in plain language."
+        + _FORMATTING_RULE
     ),
     "student": (
         "You are CivilBot in Learning Mode - a patient tutor for civil/structural engineering students. "
@@ -43,6 +51,7 @@ SYSTEM_PROMPTS = {
         "numeric result is relevant (beam design, column capacity, truss member force, etc.) call the "
         "calculation tool and then walk the student through *why* the formula produces that number, not "
         "just what the number is. Encourage the student to try changing one input at a time to build intuition."
+        + _FORMATTING_RULE
     ),
     "professional": (
         "You are CivilBot in Professional Analysis Mode, assisting a practicing engineer who needs exact, "
@@ -52,6 +61,7 @@ SYSTEM_PROMPTS = {
         "required inputs are missing or ambiguous, ask for them rather than assuming values. If the user "
         "has uploaded a document, prefer its extracted parameters as defaults but confirm them before use, "
         "since automatic extraction can be wrong."
+        + _FORMATTING_RULE
     ),
 }
 

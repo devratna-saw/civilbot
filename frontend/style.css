@@ -148,6 +148,16 @@ html, body {
   font-size: 14.5px;
 }
 .msg.bot .bubble { background: var(--bg-elevated); border: 1px solid var(--border); }
+.msg.bot .bubble h3, .msg.bot .bubble h4, .msg.bot .bubble h5, .msg.bot .bubble h6 {
+  margin: 10px 0 4px; font-size: 1em; color: var(--text);
+}
+.msg.bot .bubble ul, .msg.bot .bubble ol { margin: 4px 0; padding-left: 22px; }
+.msg.bot .bubble li { margin: 2px 0; }
+.msg.bot .bubble code {
+  background: #0d1322; border: 1px solid var(--border); border-radius: 4px;
+  padding: 1px 5px; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.9em;
+}
+.msg.bot .bubble hr { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
 .msg.user .bubble { background: var(--accent-2); color: #06101f; }
 .msg.tool .bubble {
   background: #0e2a24;
