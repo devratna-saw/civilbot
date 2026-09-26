@@ -6,9 +6,11 @@ import uuid
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from . import diagrams
 from . import structural_engine as eng
 from .gemini_client import SYSTEM_PROMPTS
 from .pdf_parser import parse_pdf
@@ -134,6 +136,26 @@ def calc_column(inp: eng.ColumnInput):
         return eng.analyze_column(inp)
     except eng.EngineError as e:
         raise HTTPException(422, str(e))
+
+
+@app.post("/api/calc/beam/diagram")
+def calc_beam_diagram(inp: eng.BeamInput):
+    try:
+        result = eng.analyze_beam(inp)
+        png = diagrams.beam_diagram_png(inp, result)
+    except eng.EngineError as e:
+        raise HTTPException(422, str(e))
+    return Response(content=png, media_type="image/png")
+
+
+@app.post("/api/calc/truss/diagram")
+def calc_truss_diagram(inp: eng.TrussInput):
+    try:
+        result = eng.analyze_truss(inp)
+        png = diagrams.truss_diagram_png(inp, result)
+    except eng.EngineError as e:
+        raise HTTPException(422, str(e))
+    return Response(content=png, media_type="image/png")
 
 
 _frontend_dir = os.path.join(os.path.dirname(__file__), "..", "..", "frontend")

@@ -209,6 +209,7 @@ function renderBeamSim() {
       ${field("bDeflRatio", "Deflection limit ratio (L/x)", 360)}
     </div>
     <button class="run-btn" id="bRun">Run</button>
+    <img class="diagram-img" id="bDiagram" hidden>
     <div class="result-box" id="bResult"></div>
   `;
   document.getElementById("bRun").addEventListener("click", async () => {
@@ -224,6 +225,7 @@ function renderBeamSim() {
       deflection_limit_ratio: num("bDeflRatio") || 360,
     };
     await runCalc("/api/calc/beam", body, "bResult");
+    await fetchDiagram("/api/calc/beam/diagram", body, "bDiagram");
   });
 }
 
@@ -275,6 +277,7 @@ function renderTrussSim() {
         <textarea id="tLoads">${JSON.stringify(exampleLoads, null, 2)}</textarea></div>
     </div>
     <button class="run-btn" id="tRun">Run</button>
+    <img class="diagram-img" id="tDiagram" hidden>
     <div class="result-box" id="tResult"></div>
   `;
   document.getElementById("tRun").addEventListener("click", async () => {
@@ -290,12 +293,33 @@ function renderTrussSim() {
       return;
     }
     await runCalc("/api/calc/truss", body, "tResult");
+    await fetchDiagram("/api/calc/truss/diagram", body, "tDiagram");
   });
 }
 
 function num(id) {
   const v = document.getElementById(id).value;
   return v === "" ? null : parseFloat(v);
+}
+
+async function fetchDiagram(path, body, imgId) {
+  const img = document.getElementById(imgId);
+  try {
+    const res = await fetch(`${API}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) { img.hidden = true; return; }
+    const blob = await res.blob();
+    if (img.dataset.prevUrl) URL.revokeObjectURL(img.dataset.prevUrl);
+    const url = URL.createObjectURL(blob);
+    img.src = url;
+    img.dataset.prevUrl = url;
+    img.hidden = false;
+  } catch (e) {
+    img.hidden = true;
+  }
 }
 
 async function runCalc(path, body, resultId) {

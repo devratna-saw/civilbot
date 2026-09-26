@@ -264,6 +264,12 @@ textarea#msgInput:focus { outline: none; border-color: var(--accent-2); }
 .result-box .pass { color: var(--ok); }
 .result-box .fail { color: var(--bad); }
 
+.diagram-img {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
 .truss-editor textarea {
   width: 100%;
   min-height: 140px;
