@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from . import diagrams
 from . import structural_engine as eng
 from .gemini_client import SYSTEM_PROMPTS
+from .image_gen import ImageGenError, generate_image
 from .pdf_parser import parse_pdf
 from .session_store import store
 
@@ -156,6 +157,21 @@ def calc_truss_diagram(inp: eng.TrussInput):
     except eng.EngineError as e:
         raise HTTPException(422, str(e))
     return Response(content=png, media_type="image/png")
+
+
+class ImageRequest(BaseModel):
+    prompt: str
+    width: int = 768
+    height: int = 512
+
+
+@app.post("/api/generate-image")
+def api_generate_image(req: ImageRequest):
+    try:
+        data = generate_image(req.prompt, req.width, req.height)
+    except ImageGenError as e:
+        raise HTTPException(422, str(e))
+    return Response(content=data, media_type="image/jpeg")
 
 
 _frontend_dir = os.path.join(os.path.dirname(__file__), "..", "..", "frontend")

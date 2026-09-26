@@ -106,6 +106,7 @@ html, body {
   font-size: 13px;
 }
 .sim-btn:hover { border-color: var(--accent); }
+.sim-btn.full-width { flex: none; width: 100%; }
 
 .new-chat {
   margin-top: auto;
@@ -231,11 +232,12 @@ textarea#msgInput:focus { outline: none; border-color: var(--accent-2); }
 
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field label { font-size: 12px; color: var(--text-dim); }
-.field input, .field select {
+.field input, .field select, .field textarea {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   color: var(--text);
   border-radius: 8px;
+  font-family: inherit;
   padding: 8px 10px;
   font-size: 13.5px;
 }

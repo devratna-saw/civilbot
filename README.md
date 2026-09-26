@@ -14,7 +14,19 @@ grounds its numeric answers in a real calculation engine instead of guessing.
   uploaded spec/calc-sheet PDF (heuristic, regex-based) and feeds them into the chat
   as context so you can ask "does this section pass?" about your own document.
 - **Standalone Simulator panel** — beam, column, and truss calculators usable without
-  the chatbot at all (truss geometry is easier to enter as JSON/a form than in chat).
+  the chatbot at all (truss geometry is easier to enter as JSON/a form than in chat),
+  each with an auto-generated loading/shear/moment or force diagram (see below).
+- **Engineering diagrams** — `backend/app/diagrams.py` renders loading/shear-force/
+  bending-moment diagrams and colour-coded truss force diagrams straight from the
+  structural_engine's own numbers (matplotlib) — free and exact, not AI-generated.
+- **AI image generation** — a separate "Generate an image" panel using
+  [Pollinations.ai](https://pollinations.ai)'s free, keyless endpoint
+  (`backend/app/image_gen.py`). Illustrative only (not engineering-accurate), and
+  since it's a shared public service it occasionally returns a "busy, try again"
+  error under load — that's the trade-off for zero cost/zero signup. Gemini's own
+  image models (`gemini-*-image`, "nano banana") are wired for later: they showed
+  in the model catalog but have a **free-tier quota of zero** on this project —
+  swapping to them once you enable billing is a one-file change in `image_gen.py`.
 
 ## Architecture (kept deliberately small so it runs free)
 

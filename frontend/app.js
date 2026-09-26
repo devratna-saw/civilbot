@@ -181,6 +181,49 @@ function openSimulator(kind) {
   if (kind === "beam") renderBeamSim();
   if (kind === "column") renderColumnSim();
   if (kind === "truss") renderTrussSim();
+  if (kind === "image") renderImageSim();
+}
+
+function renderImageSim() {
+  simTitle.textContent = "Generate an image";
+  simBody.innerHTML = `
+    <div class="field"><label>Describe the image you want</label>
+      <textarea id="iPrompt" placeholder="e.g. a steel truss bridge over a river at sunset, blueprint style" style="min-height:70px"></textarea>
+    </div>
+    <button class="run-btn" id="iRun">Generate</button>
+    <img class="diagram-img" id="iImage" hidden>
+    <div class="result-box" id="iResult"></div>
+    <div class="footer-note">Free, keyless image API (Pollinations.ai) — illustrative only, not engineering-accurate.</div>
+  `;
+  document.getElementById("iRun").addEventListener("click", async () => {
+    const prompt = document.getElementById("iPrompt").value.trim();
+    const resultBox = document.getElementById("iResult");
+    const img = document.getElementById("iImage");
+    if (!prompt) { resultBox.textContent = "Enter a description first."; return; }
+    resultBox.textContent = "Generating... (can take up to ~20s on the free tier)";
+    img.hidden = true;
+    try {
+      const res = await fetch(`${API}/api/generate-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        resultBox.textContent = "Error: " + (data.detail || res.statusText);
+        return;
+      }
+      const blob = await res.blob();
+      if (img.dataset.prevUrl) URL.revokeObjectURL(img.dataset.prevUrl);
+      const url = URL.createObjectURL(blob);
+      img.src = url;
+      img.dataset.prevUrl = url;
+      img.hidden = false;
+      resultBox.textContent = "";
+    } catch (e) {
+      resultBox.textContent = "Network error: " + e.message;
+    }
+  });
 }
 
 function renderBeamSim() {
