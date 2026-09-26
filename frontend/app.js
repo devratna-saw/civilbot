@@ -55,13 +55,6 @@ function renderMarkdown(raw) {
   return html;
 }
 
-function fmtToolCalls(toolCalls) {
-  if (!toolCalls || !toolCalls.length) return "";
-  return toolCalls
-    .map((tc) => `engine call: ${tc.tool}(${JSON.stringify(tc.args)})\nresult: ${JSON.stringify(tc.result, null, 2)}`)
-    .join("\n\n");
-}
-
 async function sendMessage() {
   const text = msgInput.value.trim();
   if (!text) return;
@@ -82,15 +75,6 @@ async function sendMessage() {
       thinking.parentElement.className = "msg error";
       thinking.textContent = data.detail || "Something went wrong.";
       return;
-    }
-    if (data.tool_calls && data.tool_calls.length) {
-      const toolMsg = document.createElement("div");
-      toolMsg.className = "msg tool";
-      const b = document.createElement("div");
-      b.className = "bubble";
-      b.textContent = fmtToolCalls(data.tool_calls);
-      toolMsg.appendChild(b);
-      chatScroll.insertBefore(toolMsg, thinking.parentElement);
     }
     if (data.images && data.images.length) {
       for (const img of data.images) {
