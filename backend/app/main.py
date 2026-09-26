@@ -185,6 +185,17 @@ def api_generate_image(req: ImageRequest):
     return Response(content=data, media_type="image/jpeg")
 
 
+class _RevalidatingStaticFiles(StaticFiles):
+    """Without a Cache-Control header browsers heuristically cache app.js/style.css, so
+    after a deploy users can run new HTML against stale JS. no-cache = always revalidate
+    via ETag (cheap 304 when unchanged)."""
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 _frontend_dir = os.path.join(os.path.dirname(__file__), "..", "..", "frontend")
 if os.path.isdir(_frontend_dir):
-    app.mount("/", StaticFiles(directory=_frontend_dir, html=True), name="frontend")
+    app.mount("/", _RevalidatingStaticFiles(directory=_frontend_dir, html=True), name="frontend")

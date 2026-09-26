@@ -58,7 +58,7 @@ function renderMarkdown(raw) {
 function fmtToolCalls(toolCalls) {
   if (!toolCalls || !toolCalls.length) return "";
   return toolCalls
-    .map((tc) => `<b>engine call:</b> ${tc.tool}(${JSON.stringify(tc.args)})\n<b>result:</b> ${JSON.stringify(tc.result, null, 2)}`)
+    .map((tc) => `engine call: ${tc.tool}(${JSON.stringify(tc.args)})\nresult: ${JSON.stringify(tc.result, null, 2)}`)
     .join("\n\n");
 }
 
