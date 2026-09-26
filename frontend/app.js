@@ -220,7 +220,7 @@ function renderImageSim() {
     const resultBox = document.getElementById("iResult");
     const img = document.getElementById("iImage");
     if (!prompt) { resultBox.textContent = "Enter a description first."; return; }
-    resultBox.textContent = "Generating... (can take up to ~20s on the free tier)";
+    resultBox.textContent = "Generating... (free shared service, can take up to ~40s and occasionally fails - just retry)";
     img.hidden = true;
     try {
       const res = await fetch(`${API}/api/generate-image`, {
