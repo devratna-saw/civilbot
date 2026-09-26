@@ -16,6 +16,11 @@ grounds its numeric answers in a real calculation engine instead of guessing.
 - **Standalone Simulator panel** — beam, column, and truss calculators usable without
   the chatbot at all (truss geometry is easier to enter as JSON/a form than in chat),
   each with an auto-generated loading/shear/moment or force diagram (see below).
+- **Images inline in chat** — asking about a beam in chat (e.g. "explain this beam with
+  a diagram") automatically attaches its loading/shear/moment diagram to the reply, so
+  text and image both show up together. Asking for a non-technical picture ("show me a
+  suspension bridge") routes to the AI image tool instead — the model is told never to
+  use that one for engineering numbers, only calculate_beam's own diagram counts there.
 - **Engineering diagrams** — `backend/app/diagrams.py` renders loading/shear-force/
   bending-moment diagrams and colour-coded truss force diagrams straight from the
   structural_engine's own numbers (matplotlib) — free and exact, not AI-generated.

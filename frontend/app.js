@@ -92,6 +92,26 @@ async function sendMessage() {
       toolMsg.appendChild(b);
       chatScroll.insertBefore(toolMsg, thinking.parentElement);
     }
+    if (data.images && data.images.length) {
+      for (const img of data.images) {
+        const imgMsg = document.createElement("div");
+        imgMsg.className = "msg bot";
+        const b = document.createElement("div");
+        b.className = "bubble image-bubble";
+        const el = document.createElement("img");
+        el.src = img.data_url;
+        el.alt = img.caption || "generated image";
+        b.appendChild(el);
+        if (img.caption) {
+          const cap = document.createElement("div");
+          cap.className = "image-caption";
+          cap.textContent = img.caption;
+          b.appendChild(cap);
+        }
+        imgMsg.appendChild(b);
+        chatScroll.insertBefore(imgMsg, thinking.parentElement);
+      }
+    }
     thinking.innerHTML = renderMarkdown(data.reply);
     sessionId = data.session_id;
     localStorage.setItem("civilbot_session", sessionId);

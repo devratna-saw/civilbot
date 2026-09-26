@@ -10,7 +10,9 @@ from typing import Optional
 
 import google.generativeai as genai
 
+from . import diagrams
 from . import structural_engine as eng
+from .image_gen import ImageGenError, generate_image
 
 _API_KEY = os.environ.get("GEMINI_API_KEY")
 _MODEL_NAME = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
@@ -34,6 +36,11 @@ _FORMATTING_RULE = (
     "*italics*, `code`, -/1. lists, --- rules) and does NOT render LaTeX. Never use LaTeX or "
     "$...$ math delimiters - write formulas and units in plain text instead, e.g. 'M = wL^2/8' "
     "and 'sigma = M*c/I', with units like 'kN', 'm', 'MPa' spelled out plainly."
+    " Note: calling calculate_beam automatically attaches a loading/shear/moment diagram to the "
+    "chat for the user to see - you don't need to ask if they want one, and you don't need to "
+    "describe the diagram's image in words since they can already see it; just reference it "
+    "naturally (e.g. 'as the diagram shows...'). For a non-technical illustrative picture (not a "
+    "calculation), call generate_illustration instead."
 )
 
 SYSTEM_PROMPTS = {
@@ -132,10 +139,33 @@ COLUMN_TOOL = genai.protos.FunctionDeclaration(
     ),
 )
 
-TOOLS = [genai.protos.Tool(function_declarations=[BEAM_TOOL, COLUMN_TOOL])]
+ILLUSTRATION_TOOL = genai.protos.FunctionDeclaration(
+    name="generate_illustration",
+    description=(
+        "Generate a decorative/illustrative AI image for the user when they explicitly ask to "
+        "see, draw, or visualize something (e.g. 'show me a picture of a suspension bridge', "
+        "'generate an image of a construction site'). This is NOT technically accurate and must "
+        "NOT be used for beam/truss/column engineering questions - calculate_beam already "
+        "attaches an exact technical diagram automatically for those."
+    ),
+    parameters=_schema(
+        {"prompt": genai.protos.Schema(type=genai.protos.Type.STRING, description="A short visual description of the image to generate")},
+        ["prompt"],
+    ),
+)
+
+TOOLS = [genai.protos.Tool(function_declarations=[BEAM_TOOL, COLUMN_TOOL, ILLUSTRATION_TOOL])]
 
 
-def _run_tool(name: str, args: dict) -> dict:
+class _ToolOutcome:
+    def __init__(self, result: dict, image_bytes: bytes | None = None, image_mime: str | None = None, image_caption: str | None = None):
+        self.result = result
+        self.image_bytes = image_bytes
+        self.image_mime = image_mime
+        self.image_caption = image_caption
+
+
+def _run_tool(name: str, args: dict) -> _ToolOutcome:
     if name == "calculate_beam":
         inp = eng.BeamInput(
             support_type=args["support_type"],
@@ -149,7 +179,11 @@ def _run_tool(name: str, args: dict) -> dict:
             deflection_limit_ratio=args.get("deflection_limit_ratio", 360),
         )
         result = eng.analyze_beam(inp)
-        return result.model_dump()
+        try:
+            png = diagrams.beam_diagram_png(inp, result)
+        except Exception:
+            png = None  # don't let a rendering hiccup break the numeric answer
+        return _ToolOutcome(result.model_dump(), png, "image/png" if png else None, "Beam loading / shear / moment diagram")
     if name == "calculate_column":
         inp = eng.ColumnInput(
             length_m=args["length_m"],
@@ -159,8 +193,15 @@ def _run_tool(name: str, args: dict) -> dict:
             applied_load_n=args["applied_load_n"],
         )
         result = eng.analyze_column(inp)
-        return result.model_dump()
-    return {"error": f"Unknown tool {name}"}
+        return _ToolOutcome(result.model_dump())
+    if name == "generate_illustration":
+        prompt = args.get("prompt", "")
+        try:
+            img = generate_image(prompt)
+            return _ToolOutcome({"status": "success", "prompt": prompt}, img, "image/jpeg", f"AI illustration: {prompt}")
+        except ImageGenError as e:
+            return _ToolOutcome({"status": "error", "message": str(e)})
+    return _ToolOutcome({"error": f"Unknown tool {name}"})
 
 
 class ChatSession:
@@ -174,10 +215,12 @@ class ChatSession:
         )
         self.chat = self.model.start_chat(enable_automatic_function_calling=False)
 
-    def send(self, message: str) -> tuple[str, list[dict]]:
-        """Returns (final_text, tool_calls_made)."""
+    def send(self, message: str) -> tuple[str, list[dict], list[dict]]:
+        """Returns (final_text, tool_calls_made, images) - images carry raw bytes,
+        never sent to Gemini itself (only the numeric/status result is)."""
         response = self.chat.send_message(message)
         tool_calls_made: list[dict] = []
+        images: list[dict] = []
 
         # Loop to resolve any function calls the model requests.
         for _ in range(5):
@@ -193,15 +236,17 @@ class ChatSession:
             for fc in fn_calls:
                 args = dict(fc.args)
                 try:
-                    result = _run_tool(fc.name, args)
+                    outcome = _run_tool(fc.name, args)
                 except eng.EngineError as e:
-                    result = {"error": str(e)}
+                    outcome = _ToolOutcome({"error": str(e)})
                 except Exception as e:  # defensive: surface engine errors to the model, don't 500
-                    result = {"error": f"Calculation failed: {e}"}
-                tool_calls_made.append({"tool": fc.name, "args": args, "result": result})
+                    outcome = _ToolOutcome({"error": f"Calculation failed: {e}"})
+                tool_calls_made.append({"tool": fc.name, "args": args, "result": outcome.result})
+                if outcome.image_bytes:
+                    images.append({"mime": outcome.image_mime, "data": outcome.image_bytes, "caption": outcome.image_caption})
                 responses_parts.append(
                     genai.protos.Part(
-                        function_response=genai.protos.FunctionResponse(name=fc.name, response={"result": result})
+                        function_response=genai.protos.FunctionResponse(name=fc.name, response={"result": outcome.result})
                     )
                 )
             response = self.chat.send_message(genai.protos.Content(parts=responses_parts, role="user"))
@@ -212,4 +257,4 @@ class ChatSession:
             final_text = "".join(
                 part.text for cand in response.candidates for part in cand.content.parts if hasattr(part, "text") and part.text
             ) or "(no response text)"
-        return final_text, tool_calls_made
+        return final_text, tool_calls_made, images

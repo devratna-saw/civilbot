@@ -168,6 +168,9 @@ html, body {
   font-size: 12.5px;
 }
 .msg.error .bubble { background: #2a1418; border: 1px solid #6a2530; color: #ffb3ba; }
+.bubble.image-bubble { padding: 8px; max-width: 480px; }
+.bubble.image-bubble img { display: block; width: 100%; border-radius: 8px; }
+.bubble.image-bubble .image-caption { font-size: 12px; color: var(--text-dim); padding: 6px 4px 0; }
 
 .composer {
   border-top: 1px solid var(--border);

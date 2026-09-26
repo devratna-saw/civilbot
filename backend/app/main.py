@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import os
 import uuid
 
@@ -38,9 +39,15 @@ class ChatRequest(BaseModel):
     mode: str = "general"
 
 
+class ChatImage(BaseModel):
+    data_url: str
+    caption: str | None = None
+
+
 class ChatResponse(BaseModel):
     reply: str
     tool_calls: list[dict]
+    images: list[ChatImage] = []
     session_id: str
 
 
@@ -70,13 +77,17 @@ async def chat(req: ChatRequest):
             message = f"{state.pdf_context}\n\nUser question: {req.message}"
             state.pdf_context = None  # only inject once per upload
         try:
-            reply, tool_calls = await asyncio.to_thread(state.chat_session.send, message)
+            reply, tool_calls, raw_images = await asyncio.to_thread(state.chat_session.send, message)
         except RuntimeError as e:
             raise HTTPException(500, str(e))
         except Exception as e:
             raise HTTPException(502, f"Chat backend error: {e}")
 
-    return ChatResponse(reply=reply, tool_calls=tool_calls, session_id=session_id)
+    images = [
+        ChatImage(data_url=f"data:{img['mime']};base64,{base64.b64encode(img['data']).decode()}", caption=img.get("caption"))
+        for img in raw_images
+    ]
+    return ChatResponse(reply=reply, tool_calls=tool_calls, images=images, session_id=session_id)
 
 
 @app.post("/api/upload-pdf")
